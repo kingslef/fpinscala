@@ -140,7 +140,19 @@ object PolymorphicFunctions {
 
   // Exercise 2: Implement a polymorphic function to check whether
   // an `Array[A]` is sorted
-  def isSorted[A](as: Array[A], gt: (A,A) => Boolean): Boolean = ???
+  def isSorted[A](as: Array[A], gt: (A,A) => Boolean): Boolean = {
+    @annotation.tailrec
+    def loop(i: Int): Boolean = {
+      if (i + 1 >= as.length)
+        true
+      else if (!gt(as(i + 1), as(i)))
+        false
+      else
+        loop(i + 1)
+    }
+
+    loop(0)
+  }
 
   // Polymorphic functions are often so constrained by their type
   // that they only have one implementation! Here's an example:
@@ -153,13 +165,13 @@ object PolymorphicFunctions {
   // Note that `=>` associates to the right, so we could
   // write the return type as `A => B => C`
   def curry[A,B,C](f: (A, B) => C): A => (B => C) =
-    ???
+    (a: A) => (b: B) => f(a, b)
 
   // NB: The `Function2` trait has a `curried` method already
 
   // Exercise 4: Implement `uncurry`
   def uncurry[A,B,C](f: A => B => C): (A, B) => C =
-    ???
+    (a: A, b: B) => f(a)(b)
 
   /*
   NB: There is a method on the `Function` object in the standard library,
@@ -174,5 +186,53 @@ object PolymorphicFunctions {
   // Exercise 5: Implement `compose`
 
   def compose[A,B,C](f: B => C, g: A => B): A => C =
-    ???
+    (a) => f(g(a))
+}
+
+object TestIsSorted {
+  import PolymorphicFunctions.isSorted
+
+  def main(args: Array[String]): Unit = {
+    val arr = Array(1, 2, 3)
+    def intCmp(a: Int, b: Int): Boolean = a > b
+
+    println("is sorted " + isSorted(arr, intCmp))
+    println("is sorted " + isSorted(Array(1, 3, 2), intCmp))
+    println("is sorted " + isSorted(Array(), intCmp))
+    println("is sorted " + isSorted(Array(0), intCmp))
+
+    println("is sorted " + isSorted(Array('a', 'b', 'c'), (a: Char, b: Char) => a > b))
+  }
+}
+
+object TestCurry {
+  import PolymorphicFunctions.curry
+  import PolymorphicFunctions.uncurry
+
+  def main(args: Array[String]): Unit = {
+    val f = curry((a: Int, b: String) => b(a))
+    val g = f(2);
+    println("g: " + g("foobar"))
+    println("curried: " + f(2)("foobar"))
+
+    println("uncurried: " + uncurry(f)(2, "foobar"))
+  }
+}
+
+object TestCompose {
+  import PolymorphicFunctions.compose
+
+  def main(args: Array[String]): Unit = {
+    val f = (a: Int) => a * 3
+    val g = (a: Int) => a + 10
+
+    val fg = compose(f, g)
+    println("composed: " + fg(100))
+
+    val fog = g andThen f
+    println("andThen: " + fog(100))
+
+    val fg2 = f compose g
+    println("compose: " + fg2(100))
+  }
 }
